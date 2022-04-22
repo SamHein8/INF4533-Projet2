@@ -1,10 +1,4 @@
-/*
-refreshMsg();
-viewSection('intro');
-*/
-
 /* encryption */
-
 let pem = localStorage.getItem("pem");
 function getKeyPair() {
     // generer et sauvegarder la clef privee en format PEM dans localStorage
@@ -22,6 +16,51 @@ function getKeyPair() {
 let keyPair = getKeyPair();
 let publicKeyPem = forge.pki.publicKeyToPem(keyPair.publicKey);
 document.getElementById("publicKey").innerHTML = publicKeyPem;
+
+/* APIs */
+const urlGetLetters = 'http://localhost:3000/getLetters',
+    urlAddLetter = 'http://localhost:3000/addLetter';
+
+
+function decryptMsg(msg) {
+    let decryptedMsg = forge.util.decodeUtf8(keyPair.privateKey.decrypt(forge.util.decode64(msg)));
+    return decryptedMsg;
+}
+
+async function getMessagesFromServer() {
+    fetch(urlGetLetters).then((data) => { 
+        console.log(data);
+        let arrayEncryptedMsg = Object.getOwnPropertyNames(data);
+        let arrayDecryptedMsg = [];
+        arrayEncryptedMsg.forEach(element => {
+            try {
+                arrayDecryptedMsg.push(decryptMsg(element));
+            } catch (error) {
+                console.log(`Could not decrypt message ${element}`);
+            }
+        });
+        return arrayDecryptedMsg;
+    }).then((res) => {
+        console.log(res);
+    });
+};
+
+async function postEncryptedMsg(data) {
+    const response = await fetch(urlAddLetter, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain'
+        },
+        body: data
+    });
+
+    console.log(data);
+    console.log(response);
+    refreshMsg();
+    return response.json;
+};
+
+
 
 function viewSection(sectionID) {
     let sections = document.getElementsByClassName("nav-section");
@@ -80,10 +119,6 @@ if (localStorage.getItem("arrayContacts") == "" || localStorage.getItem("arrayCo
 } else {
     arrayContacts = JSON.parse(localStorage.getItem("arrayContacts"));
 }
-
-//refresh views after retrieving from localstorage
-refreshContacts();
-refreshMsgContacts();
 
 function saveContact() {
     let frmID = document.getElementById("contactID").value;
@@ -252,83 +287,68 @@ function refreshMsgContacts() {
         }
         msgContact.appendChild(opt);
     }
-
 }
 
 
 /* messages */
 
-let arrayMsg = [];
-let lettersJSON = {};
-let counterMsg;
-
-//turn into falsey statement?
-if (localStorage.getItem("counterMsg") !== null) {
-    counterMsg = localStorage.getItem("counterMsg");
-} else {
-    counterMsg = 0;
-    localStorage.setItem("counterMsg", counterMsg);
-}
-
-if (localStorage.getItem("arrayMsg") == "" || localStorage.getItem("arrayMsg") == null) {
-    localStorage.setItem("arrayMsg", arrayMsg);
-} else {
-    arrayMsg = JSON.parse(localStorage.getItem("arrayMsg"));
-}
+let arrayMsg = []
+let counterMsg = 0;
 
 function sendMsg() {
-    let frmMsgContact = document.getElementById("msgContact").value;
+    let frmMsgContactID = document.getElementById("msgContact").value;
     let frmMsgText = document.getElementById("msgText").value;
 
-    if (frmMsgContact == "blankrow") {
+    if (frmMsgContactID == "blankrow") {
         alert("Erreur! Choisissez un contact.");
     } else if (frmMsgText == "") { 
         alert("Erreur! Saisissez le message.");
     } else {
-        let frmNewMsg = {
-            "ID": ++counterMsg,
-            "contactID": frmMsgContact,
-            "message": frmMsgText,
-            "lastUpdate": new Date()
+        let contactIndex = getArrayContactsIndexFromID(frmMsgContactID);
+        let contact = arrayContacts[contactIndex];
+        let msgEncrypted;
+        try {
+            console.log(contact.publicKey);
+            let contactPublicKey = forge.pki.publicKeyFromPem(contact.publicKey);
+            console.log(forge.pki.publicKeyToPem(contactPublicKey));
+            msgEncrypted = forge.util.encode64(contactPublicKey.encrypt(forge.util.encodeUtf8(frmMsgText)));
+            postEncryptedMsg(msgEncrypted);
+        } catch (err) {
+            console.log(err);
         };
-        arrayMsg.push(frmNewMsg);
-        refreshMsg();
     }
 }
 
 function refreshMsg(searchCond) {
+    arrayMsg = [];
+    let arrayDecryptedMsg = getMessagesFromServer();
+
     let msgTable = document.getElementById("tblMsgBody");
     msgTable.innerHTML = "";
 
     if (arrayMsg.length === 0) {
         addMsgTableRow();
     } else {
-        for (var i = 0; i < arrayMsg.length; i++) {
-            arrayMsg[i].lastUpdate = new Date(arrayMsg[i].lastUpdate);
-            let msg = arrayMsg[i];
-            let msgContact;
-            let msgContactIndex = getArrayContactsIndexFromID(arrayMsg[i].contactID);
-            if (msgContactIndex == -1) {
-                msgContact.name = "";
+        for (let i = 0; i < arrayDecryptedMsg.length; i++) {
+            let newMsg = {
+                "ID": ++counterMsg,
+                "message": arrayDecryptedMsg[i],
+                "lastUpdate": new Date()
+            };
+            arrayMsg.push(newMsg);
+            if (searchCond == undefined || arrayDecryptedMsg[i].includes(searchCond)) {
+                addMsgTableRow(newMsg);
             }
-            let searchMsgAndContact = JSON.stringify(msg) + JSON.stringify(msgContact);
-            if (searchCond == undefined || searchMsgAndContact.includes(searchCond)) {
-                addMsgTableRow(msg);
-            }
-        }
+        };
     }
-
-    localStorage.setItem("arrayMsg", JSON.stringify(arrayMsg));
-    localStorage.setItem("counterMsg", counterMsg);
 }
 
 function addMsgTableRow(newMsg) {
     let tbodyRef = document.getElementById("tblMsg").getElementsByTagName("tbody")[0];
     let newRow = tbodyRef.insertRow();
     let cellID = newRow.insertCell(0);
-    let cellRecipient = newRow.insertCell(1);
-    let cellMessage = newRow.insertCell(2);
-    let cellLastUpdate = newRow.insertCell(3);
+    let cellMessage = newRow.insertCell(1);
+    let cellLastUpdate = newRow.insertCell(2);
 
     //keep this?
     cellMessage.classList.add("tdbreak");
@@ -336,20 +356,7 @@ function addMsgTableRow(newMsg) {
     if (newMsg == undefined) {
         cellMessage.innerHTML = "Aucun message";
     } else {
-        let msgContact;
-        for (let i = 0; i < arrayContacts.length; i++) {
-            if (arrayContacts[i].ID == newMsg.contactID) {
-                msgContact = arrayContacts[i];
-                break;
-            }
-        }
-        
-        if (msgContact == undefined) {
-            msgContact.name = "";
-        }
-
         cellID.innerHTML = newMsg.ID;
-        cellRecipient.innerHTML = msgContact.name;
         cellMessage.innerHTML = newMsg.message.replace(/\n/g,"<br>");
     
         //let lastUpdate = Date.parse(lastUpdate);
@@ -358,3 +365,8 @@ function addMsgTableRow(newMsg) {
         cellLastUpdate.innerHTML = lastUpdate.toISOString().replace("T"," ").substring(0,16).replace(":", " h ");
     }
 }
+
+refreshContacts();
+refreshMsgContacts();
+refreshMsg();
+viewSection('intro');

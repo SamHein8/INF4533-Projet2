@@ -7,7 +7,7 @@ const express = require('express'),
 
 app.use(express.static('public'));
 
-let letters = {};
+var letters = {};
 let peers = {};
 
 fs.readFile('letters.json', (err, data) => {
