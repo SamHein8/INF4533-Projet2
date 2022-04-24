@@ -9,7 +9,7 @@ const { stringify } = require('querystring');
 app.use(express.static('public'));
 
 var letters = {};
-let peers = {Ex1:"-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCSYTkZi9scozgURRFjkayY/MgG\nyVNe3WxFQBDKmdKqrF1QUP96di+hWSBifDeLeyDDZthJkf5WW17fiu0bd1UR7xoU\nUpd2AaO2XGKUaXWsWy/RkxrT+GD+dhlnw+C1qsZg9whTMMpjeBbuKj8kdX+vycpx\nTNW917acWB8VQtwWIQIDAQAB\n-----END PUBLIC KEY-----",
+let peers = {Ex1:"-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCM1FyB6oQxWR231h6jIF64aUkF\nkM4PKnZul3ShvlcJTyBOMGpcPmyvgVOu5aw5wyqHV7v0YYam4WRmHZbQtNth2GW9\n+xTrTk++aj7gBNIVZTz0nFu6ntELOyusrQ1cd+0a4keOJohqtcRuOeD4L77vF51R\nUJKVcVgQX0WY9rOJZQIDAQAB\n-----END PUBLIC KEY-----",
 Ex2:"-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCAQc8tFOHSrxAbTxheOLKTOFH9\nXhh6js6fuXbK+6jALVdscQblBfvEveYrfxyrIQXitEiZ8yMAQxwdQFrHB546NphK\nY+3pb6Ro19TIpC/RvtHCL66FgpM8H3zUxEQnXzOv3jw9GBJltsWtdZQAEcTjB0Ds\nquWsLkKzT9b0y2lX+QIDAQAB\n-----END PUBLIC KEY-----"};
 
 fs.readFile('letters.json', (err, data) => {
