@@ -122,9 +122,19 @@ async function getContacts(){
     .then((data) => { 
         console.log(data);
         Object.entries(data).forEach(element => {
-            addContact('',element[0],element[1]);
+            let isNew = true;
+            for (let i = 0; i < arrayContacts.length; i++) {
+                if(arrayContacts[i].publicKey == element[1]){
+                    isNew = false;
+                    break;
+                }
+            }
+            if(isNew){
+                addContact('',element[0],element[1]);
+            }
         });
         refreshContacts();
+        refreshMsgContacts();
     });
 }
 
@@ -225,6 +235,7 @@ function refreshContacts(searchCond) {
     contactsTable.innerHTML = "";
 
     if (arrayContacts.length === 0) {
+        counterContacts=0;
         addContactTableRow();
     } else {
         for (var i = 0; i < arrayContacts.length; i++) {
@@ -257,8 +268,7 @@ function deleteContact(contactIDToDelete) {
     let contactIndexToDelete;
     for (let i = 0; i < arrayContacts.length; i++) {
         if (arrayContacts[i].ID == contactIDToDelete) {
-            contactIndexToDelete = i;
-            arrayContacts.splice(contactIndexToDelete);
+            arrayContacts.splice(i,1);
             break;
         }
     }
@@ -274,6 +284,7 @@ function refreshMsgContacts() {
         if (i == -1) {
             if (arrayContacts.length === 0) {
                 opt.innerText = "Aucun contact";
+
             } else {
                 opt.innerText = "Choisir contact";
             }
@@ -372,8 +383,8 @@ function addMsgTableRow(newMsg) {
     }
 }
 
-getContacts();
 refreshContacts();
 refreshMsgContacts();
+getContacts();
 refreshMsg();
 viewSection('intro');
