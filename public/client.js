@@ -18,32 +18,15 @@ let publicKeyPem = forge.pki.publicKeyToPem(keyPair.publicKey);
 document.getElementById("publicKey").innerHTML = publicKeyPem;
 
 /* APIs */
-const urlGetLetters = 'http://localhost:3000/getLetters',
-    urlAddLetter = 'http://localhost:3000/addLetter';
+const urlGetLetters = '/getLetters',
+    urlAddLetter = '/addLetter'
+    urlPeers = '/peers';
 
 
 function decryptMsg(msg) {
     let decryptedMsg = forge.util.decodeUtf8(keyPair.privateKey.decrypt(forge.util.decode64(msg)));
     return decryptedMsg;
 }
-
-async function getMessagesFromServer() {
-    fetch(urlGetLetters).then((data) => { 
-        console.log(data);
-        let arrayEncryptedMsg = Object.getOwnPropertyNames(data);
-        let arrayDecryptedMsg = [];
-        arrayEncryptedMsg.forEach(element => {
-            try {
-                arrayDecryptedMsg.push(decryptMsg(element));
-            } catch (error) {
-                console.log(`Could not decrypt message ${element}`);
-            }
-        });
-        return arrayDecryptedMsg;
-    }).then((res) => {
-        console.log(res);
-    });
-};
 
 async function postEncryptedMsg(data) {
     const response = await fetch(urlAddLetter, {
@@ -59,7 +42,6 @@ async function postEncryptedMsg(data) {
     refreshMsg();
     return response.json;
 };
-
 
 
 function viewSection(sectionID) {
@@ -128,33 +110,48 @@ function saveContact() {
     if (frmName == "" || frmPublicKey == "") {
         alert("Erreur! Saisissez les données.");
     } else {
-        let newID;
-        if (frmID == "") {
-            newID = ++counterContacts;
-        } else {
-            newID = frmID;
-        }
-    
-        let frmNewContact = {
-            "ID": newID,
-            "name": frmName,
-            "publicKey": frmPublicKey,
-            "lastUpdate": new Date()
-        };
-    
-        arrayContactsIndex = getArrayContactsIndexFromID(frmNewContact.ID);
-    
-        if (arrayContactsIndex == -1) {
-            arrayContacts.push(frmNewContact);
-        } else {
-            arrayContacts[arrayContactsIndex] = frmNewContact;
-        }
-    
-        fillContactForm("", "", "");
+        addContact(frmID,frmName,frmPublicKey);
     }
 
     refreshContacts();
     refreshMsgContacts();
+}
+
+async function getContacts(){
+    fetch(urlPeers).then(res => res.json())
+    .then((data) => { 
+        console.log(data);
+        Object.entries(data).forEach(element => {
+            addContact('',element[0],element[1]);
+        });
+        refreshContacts();
+    });
+}
+
+function addContact(frmID,frmName,frmPublicKey){
+    let newID;
+    if (frmID == "") {
+        newID = ++counterContacts;
+    } else {
+        newID = frmID;
+    }
+
+    let frmNewContact = {
+        "ID": newID,
+        "name": frmName,
+        "publicKey": frmPublicKey,
+        "lastUpdate": new Date()
+    };
+
+    arrayContactsIndex = getArrayContactsIndexFromID(frmNewContact.ID);
+
+    if (arrayContactsIndex == -1) {
+        arrayContacts.push(frmNewContact);
+    } else {
+        arrayContacts[arrayContactsIndex] = frmNewContact;
+    }
+
+    fillContactForm("", "", "");
 }
 
 function getArrayContactsIndexFromID(newContactID) {
@@ -271,6 +268,7 @@ function deleteContact(contactIDToDelete) {
 function refreshMsgContacts() {
     let msgContact = document.getElementById("msgContact");
     msgContact.innerHTML = "";
+
     for (let i = -1; i < arrayContacts.length; i++) {
         let opt = document.createElement("option");
         if (i == -1) {
@@ -292,7 +290,6 @@ function refreshMsgContacts() {
 
 /* messages */
 
-let arrayMsg = []
 let counterMsg = 0;
 
 function sendMsg() {
@@ -308,9 +305,9 @@ function sendMsg() {
         let contact = arrayContacts[contactIndex];
         let msgEncrypted;
         try {
-            console.log(contact.publicKey);
+            //console.log(contact.publicKey);
             let contactPublicKey = forge.pki.publicKeyFromPem(contact.publicKey);
-            console.log(forge.pki.publicKeyToPem(contactPublicKey));
+            //console.log(forge.pki.publicKeyToPem(contactPublicKey));
             msgEncrypted = forge.util.encode64(contactPublicKey.encrypt(forge.util.encodeUtf8(frmMsgText)));
             postEncryptedMsg(msgEncrypted);
         } catch (err) {
@@ -319,28 +316,37 @@ function sendMsg() {
     }
 }
 
-function refreshMsg(searchCond) {
-    arrayMsg = [];
-    let arrayDecryptedMsg = getMessagesFromServer();
-
+async function refreshMsg(searchCond) {
     let msgTable = document.getElementById("tblMsgBody");
     msgTable.innerHTML = "";
-
-    if (arrayMsg.length === 0) {
-        addMsgTableRow();
-    } else {
-        for (let i = 0; i < arrayDecryptedMsg.length; i++) {
-            let newMsg = {
-                "ID": ++counterMsg,
-                "message": arrayDecryptedMsg[i],
-                "lastUpdate": new Date()
-            };
-            arrayMsg.push(newMsg);
-            if (searchCond == undefined || arrayDecryptedMsg[i].includes(searchCond)) {
-                addMsgTableRow(newMsg);
+    fetch(urlGetLetters).then(res => res.json())
+    .then((data) => { 
+        console.log(data);
+        let arrayEncryptedMsg = data;
+        let arrayDecryptedMsg = [];
+        arrayEncryptedMsg.forEach(element => {
+            try {
+                arrayDecryptedMsg.push(decryptMsg(element));
+            } catch (error) {
+                console.log(`Could not decrypt message ${element}`);
             }
-        };
-    }
+        });
+        console.log(arrayDecryptedMsg);
+        if (arrayDecryptedMsg.length === 0) {
+            addMsgTableRow();
+        } else {
+            for (let i = 0; i < arrayDecryptedMsg.length; i++) {
+                let newMsg = {
+                    "ID": ++counterMsg,
+                    "message": arrayDecryptedMsg[i],
+                    "lastUpdate": new Date()
+                };
+                if (searchCond == undefined || arrayDecryptedMsg[i].includes(searchCond)) {
+                    addMsgTableRow(newMsg);
+                }
+            };
+        }
+    });
 }
 
 function addMsgTableRow(newMsg) {
@@ -366,6 +372,7 @@ function addMsgTableRow(newMsg) {
     }
 }
 
+getContacts();
 refreshContacts();
 refreshMsgContacts();
 refreshMsg();
