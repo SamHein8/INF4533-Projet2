@@ -37,8 +37,8 @@ async function postEncryptedMsg(data) {
         body: data
     });
 
-    console.log(data);
-    console.log(response);
+    /*console.log(data);
+    console.log(response);*/
     refreshMsg();
     return response.json;
 };
@@ -120,7 +120,7 @@ function saveContact() {
 async function getContacts(){
     fetch(urlPeers).then(res => res.json())
     .then((data) => { 
-        console.log(data);
+        //console.log(data);
         Object.entries(data).forEach(element => {
             let isNew = true;
             for (let i = 0; i < arrayContacts.length; i++) {
@@ -331,7 +331,7 @@ async function refreshMsg(searchCond) {
     msgTable.innerHTML = "";
     fetch(urlGetLetters).then(res => res.json())
     .then((data) => { 
-        console.log(data);
+        //console.log(data);
         let arrayEncryptedMsg = data;
         let arrayDecryptedMsg = [];
         arrayEncryptedMsg.forEach(element => {
@@ -341,7 +341,7 @@ async function refreshMsg(searchCond) {
                 console.log(`Could not decrypt message ${element}`);
             }
         });
-        console.log(arrayDecryptedMsg);
+        //console.log(arrayDecryptedMsg);
         if (arrayDecryptedMsg.length === 0) {
             addMsgTableRow();
         } else {
