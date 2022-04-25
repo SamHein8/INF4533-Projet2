@@ -301,8 +301,6 @@ function refreshMsgContacts() {
 
 /* messages */
 
-let counterMsg = 0;
-
 function sendMsg() {
     let frmMsgContactID = document.getElementById("msgContact").value;
     let frmMsgText = document.getElementById("msgText").value;
@@ -328,6 +326,7 @@ function sendMsg() {
 }
 
 async function refreshMsg(searchCond) {
+    let counterMsg = 0;
     let msgTable = document.getElementById("tblMsgBody");
     msgTable.innerHTML = "";
     fetch(urlGetLetters).then(res => res.json())
@@ -388,3 +387,4 @@ refreshMsgContacts();
 getContacts();
 refreshMsg();
 viewSection('intro');
+setInterval(refreshMsg,60000);
