@@ -351,7 +351,7 @@ async function refreshMsg(searchCond) {
                     "message": arrayDecryptedMsg[i],
                     "lastUpdate": new Date()
                 };
-                if (searchCond == undefined || arrayDecryptedMsg[i].includes(searchCond)) {
+                if (searchCond == undefined || searchCond == "" || arrayDecryptedMsg[i].includes(searchCond)) {
                     addMsgTableRow(newMsg);
                 }
             };
@@ -382,9 +382,13 @@ function addMsgTableRow(newMsg) {
     }
 }
 
+function syncMsg(){
+    refreshMsg(document.getElementById('msgFilterTxt').value);
+}
+
 refreshContacts();
 refreshMsgContacts();
 getContacts();
 refreshMsg();
 viewSection('intro');
-setInterval(refreshMsg,60000);
+setInterval(syncMsg,60000);
