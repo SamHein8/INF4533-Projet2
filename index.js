@@ -50,7 +50,9 @@ app.post("/addLetter", bodyParser.json(), (req, res) => {
 });*/
 
 app.listen(port, () => {
-    console.log(`App listening on port ${port}`);
+    console.log("=======================================");
+    console.log(`Serveur démarré sur le port ${port}`);
+    console.log("=======================================");
 })
 
 //app.set('view engine', 'jade');
